@@ -30,6 +30,7 @@ interface SyncData {
   edcItems: EDCItem[]
   lastSync: string
   version: number
+  [key: string]: unknown
 }
 
 export class GitHubSyncService {
@@ -245,13 +246,17 @@ export class GitHubSyncService {
         return { dreams: localDreams, edcItems: localEdcItems }
       }
 
-      // Compare versions and merge
-      const localVersion = parseInt(localStorage.getItem('data-version') || '0')
+          // Compare versions and merge
+      const localVersion = typeof window !== 'undefined' 
+        ? parseInt(localStorage.getItem('data-version') || '0')
+        : 0
       const remoteVersion = remoteData.version || 0
 
       if (remoteVersion > localVersion) {
         // Remote is newer, use remote data
-        localStorage.setItem('data-version', remoteVersion.toString())
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('data-version', remoteVersion.toString())
+        }
         return { dreams: remoteData.dreams, edcItems: remoteData.edcItems }
       } else if (localVersion > remoteVersion) {
         // Local is newer, upload local data
