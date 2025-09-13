@@ -9,8 +9,8 @@ import { AddDreamForm } from './AddDreamForm'
 import { FilterSortBar } from './FilterSortBar'
 import { ItemDetailModal } from './ItemDetailModal'
 import { EDCChecklist } from './EDCChecklist'
-import { DataSync } from './DataSync'
-import { Plus, ShoppingCart, X, Zap, Cloud } from 'lucide-react'
+import { GitHubSyncModal } from './GitHubSyncModal'
+import { Plus, ShoppingCart, X, Zap, Cloud, CloudOff, RefreshCw } from 'lucide-react'
 
 export function DreamVault() {
   const {
@@ -24,14 +24,20 @@ export function DreamVault() {
     addDream,
     deleteDream,
     togglePurchased,
-    importDreams
+    syncWithGitHub,
+    uploadToGitHub,
+    downloadFromGitHub,
+    isSyncing,
+    lastSyncTime,
+    syncError,
+    isGitHubConfigured
   } = useDreamVault()
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedItem, setSelectedItem] = useState<DreamItem | null>(null)
   const [showItemModal, setShowItemModal] = useState(false)
   const [showEDCChecklist, setShowEDCChecklist] = useState(false)
-  const [showDataSync, setShowDataSync] = useState(false)
+  const [showGitHubSyncModal, setShowGitHubSyncModal] = useState(false)
 
   const handleAddDream = (dreamData: Omit<DreamItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     addDream(dreamData)
@@ -70,6 +76,11 @@ export function DreamVault() {
     setShowAddForm(!showAddForm)
   }
 
+  const handleSync = async () => {
+    await syncWithGitHub(true)
+    setShowGitHubSyncModal(false)
+  }
+
 
   return (
     <div className="bg-black overflow-x-hidden min-h-screen">
@@ -104,6 +115,45 @@ export function DreamVault() {
           <p className="text-gray-400 text-lg sm:text-xl font-light max-w-3xl mx-auto leading-relaxed slide-in-up px-4" style={{ animationDelay: '0.2s' }}>
             Where luxury meets desire. Curate, track, and conquer your ultimate wishlist.
           </p>
+
+          {/* Sync Status Indicator */}
+          <div className="flex justify-center mt-6" style={{ animationDelay: '0.4s' }}>
+            <button
+              onClick={() => setShowGitHubSyncModal(true)}
+              className="group relative flex items-center gap-3 px-6 py-3 bg-gray-800/30 hover:bg-gray-700/50 rounded-2xl border border-gray-700/50 hover:border-gray-600 transition-all duration-300 backdrop-blur-sm"
+              title={isGitHubConfigured ? "GitHub Sync Active" : "Configure GitHub Sync"}
+            >
+              {isSyncing ? (
+                <RefreshCw className="w-5 h-5 text-blue-400 animate-spin" />
+              ) : isGitHubConfigured ? (
+                <Cloud className="w-5 h-5 text-green-400" />
+              ) : (
+                <CloudOff className="w-5 h-5 text-gray-400" />
+              )}
+              
+              <div className="text-left">
+                <div className={`text-sm font-medium ${
+                  syncError ? 'text-red-400' : 
+                  isGitHubConfigured ? 'text-green-400' : 'text-gray-400'
+                }`}>
+                  {isSyncing ? 'Syncing data...' : 
+                   syncError ? 'Sync error' :
+                   isGitHubConfigured ? 'Cloud sync active' : 'Cloud sync disabled'}
+                </div>
+                {lastSyncTime && !isSyncing && (
+                  <div className="text-xs text-gray-500">
+                    Last sync: {lastSyncTime.toLocaleString()}
+                  </div>
+                )}
+              </div>
+              
+              {/* Status dot */}
+              <div className={`w-2 h-2 rounded-full ${
+                syncError ? 'bg-red-500' : 
+                isGitHubConfigured ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
+              }`}></div>
+            </button>
+          </div>
         </header>
 
         {/* Stats Cards */}
@@ -141,14 +191,23 @@ export function DreamVault() {
             </div>
           </button>
 
+          {/* GitHub Sync Button */}
           <button 
-            onClick={() => setShowDataSync(true)} 
-            className="group relative overflow-hidden bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 rounded-full p-1 hover:shadow-2xl hover:shadow-blue-600/25 transition-all duration-500"
+            onClick={() => setShowGitHubSyncModal(true)} 
+            className="group relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-full p-1 hover:shadow-2xl hover:shadow-blue-600/25 transition-all duration-500"
           >
             <div className="bg-black rounded-full px-8 py-4 group-hover:bg-transparent transition-all duration-300">
               <div className="flex items-center gap-3">
-                <Cloud className="w-6 h-6 text-white transition-transform duration-500" />
-                <span className="text-white font-bold text-lg">Sync Data</span>
+                {isSyncing ? (
+                  <RefreshCw className="w-6 h-6 text-white animate-spin transition-transform duration-500" />
+                ) : isGitHubConfigured ? (
+                  <Cloud className="w-6 h-6 text-white transition-transform duration-500" />
+                ) : (
+                  <CloudOff className="w-6 h-6 text-white transition-transform duration-500" />
+                )}
+                <span className="text-white font-bold text-lg">
+                  {isSyncing ? 'Syncing...' : isGitHubConfigured ? 'Cloud Sync' : 'Setup Sync'}
+                </span>
               </div>
             </div>
           </button>
@@ -299,12 +358,11 @@ export function DreamVault() {
           onClose={() => setShowEDCChecklist(false)}
         />
 
-        {/* Data Sync */}
-        <DataSync
-          isOpen={showDataSync}
-          onClose={() => setShowDataSync(false)}
-          dreams={allDreams}
-          onImportDreams={importDreams}
+        {/* GitHub Sync Modal */}
+        <GitHubSyncModal
+          isOpen={showGitHubSyncModal}
+          onClose={() => setShowGitHubSyncModal(false)}
+          onSync={handleSync}
         />
       </div>
     </div>

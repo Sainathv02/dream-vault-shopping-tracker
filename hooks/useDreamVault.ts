@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { DreamItem, DreamFilter, DreamStats, SortOption } from '@/lib/types'
 import { filterDreamItems, sortDreamItems } from '@/lib/utils'
+import { githubSync } from '@/lib/github-sync'
 
 const sampleDreams: DreamItem[] = [
   {
@@ -58,11 +59,28 @@ export function useDreamVault() {
   })
   const [filter, setFilter] = useState<DreamFilter>({})
   const [sortBy, setSortBy] = useState<SortOption>('created')
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
+  const [syncError, setSyncError] = useState<string | null>(null)
+  const syncTimeoutRef = useRef<NodeJS.Timeout>()
 
-  // Save to localStorage whenever dreams change
+  // Save to localStorage and auto-sync whenever dreams change
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('dreamVaultItems', JSON.stringify(dreams))
+      
+      // Auto-sync with debouncing if GitHub is configured
+      if (githubSync.isConfigured()) {
+        // Clear existing timeout
+        if (syncTimeoutRef.current) {
+          clearTimeout(syncTimeoutRef.current)
+        }
+        
+        // Set new timeout for auto-sync (5 seconds after last change)
+        syncTimeoutRef.current = setTimeout(() => {
+          syncWithGitHub()
+        }, 5000)
+      }
     }
   }, [dreams])
 
@@ -122,21 +140,151 @@ export function useDreamVault() {
     })
   }
 
-  const importDreams = (importedDreams: DreamItem[]) => {
-    // Merge imported dreams with existing ones, avoiding duplicates by name
-    setDreams(prev => {
-      const existingNames = new Set(prev.map(dream => dream.name.toLowerCase()))
-      const newDreams = importedDreams.filter(dream => 
-        !existingNames.has(dream.name.toLowerCase())
-      ).map(dream => ({
-        ...dream,
-        id: uuidv4(), // Generate new ID to avoid conflicts
-        createdAt: new Date(dream.createdAt),
-        updatedAt: new Date(dream.updatedAt)
-      }))
-      return [...prev, ...newDreams]
-    })
-  }
+  // GitHub Sync Functions
+  const syncWithGitHub = useCallback(async (force: boolean = false) => {
+    if (!githubSync.isConfigured()) {
+      setSyncError('GitHub sync not configured')
+      return false
+    }
+
+    setIsSyncing(true)
+    setSyncError(null)
+
+    try {
+      // Get current EDC items from localStorage
+      const edcItems = JSON.parse(localStorage.getItem('edc-checklist') || '[]')
+      
+      // Sync with GitHub
+      const syncResult = await githubSync.syncData(dreams, edcItems)
+      
+      // Update local state with synced data
+      if (syncResult.dreams) {
+        const convertedDreams = syncResult.dreams.map((dream: any) => ({
+          ...dream,
+          createdAt: new Date(dream.createdAt),
+          updatedAt: new Date(dream.updatedAt)
+        }))
+        setDreams(convertedDreams)
+      }
+      
+      // Update EDC items in localStorage
+      if (syncResult.edcItems) {
+        localStorage.setItem('edc-checklist', JSON.stringify(syncResult.edcItems))
+      }
+      
+      setLastSyncTime(new Date())
+      localStorage.setItem('lastSyncTime', new Date().toISOString())
+      
+      return true
+    } catch (error) {
+      console.error('Sync failed:', error)
+      setSyncError((error as Error).message)
+      return false
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [dreams])
+
+  const uploadToGitHub = useCallback(async () => {
+    if (!githubSync.isConfigured()) {
+      setSyncError('GitHub sync not configured')
+      return false
+    }
+
+    setIsSyncing(true)
+    setSyncError(null)
+
+    try {
+      const edcItems = JSON.parse(localStorage.getItem('edc-checklist') || '[]')
+      const currentVersion = parseInt(localStorage.getItem('data-version') || '0')
+      
+      await githubSync.uploadData({
+        dreams,
+        edcItems,
+        lastSync: new Date().toISOString(),
+        version: currentVersion + 1
+      })
+      
+      localStorage.setItem('data-version', (currentVersion + 1).toString())
+      setLastSyncTime(new Date())
+      localStorage.setItem('lastSyncTime', new Date().toISOString())
+      
+      return true
+    } catch (error) {
+      console.error('Upload failed:', error)
+      setSyncError((error as Error).message)
+      return false
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [dreams])
+
+  const downloadFromGitHub = useCallback(async () => {
+    if (!githubSync.isConfigured()) {
+      setSyncError('GitHub sync not configured')
+      return false
+    }
+
+    setIsSyncing(true)
+    setSyncError(null)
+
+    try {
+      const remoteData = await githubSync.downloadData()
+      
+      if (remoteData) {
+        // Update dreams
+        if (remoteData.dreams) {
+          const convertedDreams = remoteData.dreams.map((dream: any) => ({
+            ...dream,
+            createdAt: new Date(dream.createdAt),
+            updatedAt: new Date(dream.updatedAt)
+          }))
+          setDreams(convertedDreams)
+        }
+        
+        // Update EDC items
+        if (remoteData.edcItems) {
+          localStorage.setItem('edc-checklist', JSON.stringify(remoteData.edcItems))
+        }
+        
+        // Update version and sync time
+        if (remoteData.version) {
+          localStorage.setItem('data-version', remoteData.version.toString())
+        }
+        
+        setLastSyncTime(new Date())
+        localStorage.setItem('lastSyncTime', new Date().toISOString())
+      }
+      
+      return true
+    } catch (error) {
+      console.error('Download failed:', error)
+      setSyncError((error as Error).message)
+      return false
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [])
+
+  // Load last sync time on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const lastSync = localStorage.getItem('lastSyncTime')
+      if (lastSync) {
+        setLastSyncTime(new Date(lastSync))
+      }
+    }
+  }, [])
+
+  // Initial sync on mount if GitHub is configured
+  useEffect(() => {
+    if (githubSync.isConfigured()) {
+      // Small delay to allow component to mount properly
+      setTimeout(() => {
+        syncWithGitHub()
+      }, 1000)
+    }
+  }, [])
 
   return {
     dreams: filteredDreams,
@@ -150,6 +298,13 @@ export function useDreamVault() {
     updateDream,
     deleteDream,
     togglePurchased,
-    importDreams
+    // GitHub Sync
+    syncWithGitHub,
+    uploadToGitHub,
+    downloadFromGitHub,
+    isSyncing,
+    lastSyncTime,
+    syncError,
+    isGitHubConfigured: githubSync.isConfigured()
   }
 }
