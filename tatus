@@ -1,0 +1,5 @@
+[33m1e94a07[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix all TypeScript/ESLint errors - production ready build
+[33mef380c9[m Fix localStorage SSR errors - add browser environment checks
+[33m89b81a0[m Implement smart URL product extraction system with multi-method approach
+[33mf186254[m Implement GitHub sync functionality - zero-cost cloud data synchronization
+[33mc4496d7[m Add cross-device data synchronization feature - export/import functionality
