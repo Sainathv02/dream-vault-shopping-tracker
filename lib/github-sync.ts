@@ -35,7 +35,7 @@ interface SyncData {
 
 export class GitHubSyncService {
   private config: GitHubSyncConfig | null = null
-  private readonly fileName = 'dream-vault-data.json'
+  private readonly fileName = 'dream-vault-shopping-tracker.json'
 
   constructor() {
     this.loadConfig()
@@ -319,21 +319,34 @@ export class GitHubSyncService {
     }
 
     try {
+      console.log('Testing GitHub connection with token:', this.config.token.substring(0, 10) + '...')
+      
       const response = await fetch('https://api.github.com/user', {
         headers: {
           'Authorization': `Bearer ${this.config.token}`,
-          'Accept': 'application/vnd.github.v3+json'
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Dream-Vault-App'
         }
       })
 
+      console.log('GitHub API response status:', response.status)
+
       if (!response.ok) {
-        const error = await response.json()
-        return { success: false, error: error.message }
+        const errorText = await response.text()
+        console.error('GitHub API error:', errorText)
+        try {
+          const error = JSON.parse(errorText)
+          return { success: false, error: error.message || `HTTP ${response.status}: ${response.statusText}` }
+        } catch {
+          return { success: false, error: `HTTP ${response.status}: ${response.statusText}` }
+        }
       }
 
       const user = await response.json()
+      console.log('GitHub user:', user.login)
       return { success: true, user }
     } catch (error) {
+      console.error('GitHub connection error:', error)
       return { success: false, error: (error as Error).message }
     }
   }

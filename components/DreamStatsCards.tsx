@@ -1,13 +1,22 @@
 import { DreamStats } from '@/lib/types'
 import { formatPrice } from '@/lib/utils'
+import { useEffect, useState } from 'react'
 
 interface StatsCardsProps {
   stats: DreamStats
 }
 
 export function DreamStatsCards({ stats }: StatsCardsProps) {
-  const purchasedProgressWidth = stats.totalValue > 0 ? (stats.purchasedValue / stats.totalValue) * 100 : 0
-  const remainingProgressWidth = stats.totalValue > 0 ? (stats.remainingValue / stats.totalValue) * 100 : 0
+  const [isClient, setIsClient] = useState(false)
+  
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+  // Prevent hydration mismatch by showing consistent content during SSR
+  const displayStats = isClient ? stats : { totalValue: 0, purchasedValue: 0, remainingValue: 0, totalCount: 0, purchasedCount: 0, remainingCount: 0 }
+  
+  const purchasedProgressWidth = displayStats.totalValue > 0 ? (displayStats.purchasedValue / displayStats.totalValue) * 100 : 0
+  const remainingProgressWidth = displayStats.totalValue > 0 ? (displayStats.remainingValue / displayStats.totalValue) * 100 : 0
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
@@ -24,7 +33,7 @@ export function DreamStatsCards({ stats }: StatsCardsProps) {
             </div>
             <div className="text-right">
               <p className="text-violet-400 text-sm font-bold uppercase tracking-widest mb-1">Total Value</p>
-              <p className="text-4xl font-black text-white">{formatPrice(stats.totalValue)}</p>
+              <p className="text-4xl font-black text-white">{formatPrice(displayStats.totalValue)}</p>
             </div>
           </div>
           <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
@@ -45,7 +54,7 @@ export function DreamStatsCards({ stats }: StatsCardsProps) {
             </div>
             <div className="text-right">
               <p className="text-emerald-400 text-sm font-bold uppercase tracking-widest mb-1">Acquired</p>
-              <p className="text-4xl font-black text-white">{formatPrice(stats.purchasedValue)}</p>
+              <p className="text-4xl font-black text-white">{formatPrice(displayStats.purchasedValue)}</p>
             </div>
           </div>
           <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
@@ -69,7 +78,7 @@ export function DreamStatsCards({ stats }: StatsCardsProps) {
             </div>
             <div className="text-right">
               <p className="text-rose-400 text-sm font-bold uppercase tracking-widest mb-1">Dreams Left</p>
-              <p className="text-4xl font-black text-white">{formatPrice(stats.remainingValue)}</p>
+              <p className="text-4xl font-black text-white">{formatPrice(displayStats.remainingValue)}</p>
             </div>
           </div>
           <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
