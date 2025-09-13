@@ -69,18 +69,18 @@ export function useDreamVault() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('dreamVaultItems', JSON.stringify(dreams))
       
-      // Auto-sync with debouncing if GitHub is configured
-      if (githubSync.isConfigured()) {
-        // Clear existing timeout
-        if (syncTimeoutRef.current) {
-          clearTimeout(syncTimeoutRef.current)
+        // Auto-sync with debouncing if GitHub is configured (client-side only)
+        if (typeof window !== 'undefined' && githubSync.isConfigured()) {
+          // Clear existing timeout
+          if (syncTimeoutRef.current) {
+            clearTimeout(syncTimeoutRef.current)
+          }
+          
+          // Set new timeout for auto-sync (5 seconds after last change)
+          syncTimeoutRef.current = setTimeout(() => {
+            syncWithGitHub()
+          }, 5000)
         }
-        
-        // Set new timeout for auto-sync (5 seconds after last change)
-        syncTimeoutRef.current = setTimeout(() => {
-          syncWithGitHub()
-        }, 5000)
-      }
     }
   }, [dreams])
 
@@ -152,7 +152,9 @@ export function useDreamVault() {
 
     try {
       // Get current EDC items from localStorage
-      const edcItems = JSON.parse(localStorage.getItem('edc-checklist') || '[]')
+      const edcItems = typeof window !== 'undefined' 
+        ? JSON.parse(localStorage.getItem('edc-checklist') || '[]')
+        : []
       
       // Sync with GitHub
       const syncResult = await githubSync.syncData(dreams, edcItems)
@@ -168,12 +170,14 @@ export function useDreamVault() {
       }
       
       // Update EDC items in localStorage
-      if (syncResult.edcItems) {
+      if (typeof window !== 'undefined' && syncResult.edcItems) {
         localStorage.setItem('edc-checklist', JSON.stringify(syncResult.edcItems))
       }
       
       setLastSyncTime(new Date())
-      localStorage.setItem('lastSyncTime', new Date().toISOString())
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lastSyncTime', new Date().toISOString())
+      }
       
       return true
     } catch (error) {
@@ -195,8 +199,12 @@ export function useDreamVault() {
     setSyncError(null)
 
     try {
-      const edcItems = JSON.parse(localStorage.getItem('edc-checklist') || '[]')
-      const currentVersion = parseInt(localStorage.getItem('data-version') || '0')
+      const edcItems = typeof window !== 'undefined' 
+        ? JSON.parse(localStorage.getItem('edc-checklist') || '[]')
+        : []
+      const currentVersion = typeof window !== 'undefined'
+        ? parseInt(localStorage.getItem('data-version') || '0')
+        : 0
       
       await githubSync.uploadData({
         dreams,
@@ -205,9 +213,11 @@ export function useDreamVault() {
         version: currentVersion + 1
       })
       
-      localStorage.setItem('data-version', (currentVersion + 1).toString())
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('data-version', (currentVersion + 1).toString())
+        localStorage.setItem('lastSyncTime', new Date().toISOString())
+      }
       setLastSyncTime(new Date())
-      localStorage.setItem('lastSyncTime', new Date().toISOString())
       
       return true
     } catch (error) {
@@ -243,17 +253,17 @@ export function useDreamVault() {
         }
         
         // Update EDC items
-        if (remoteData.edcItems) {
+        if (typeof window !== 'undefined' && remoteData.edcItems) {
           localStorage.setItem('edc-checklist', JSON.stringify(remoteData.edcItems))
         }
         
         // Update version and sync time
-        if (remoteData.version) {
+        if (typeof window !== 'undefined' && remoteData.version) {
           localStorage.setItem('data-version', remoteData.version.toString())
+          localStorage.setItem('lastSyncTime', new Date().toISOString())
         }
         
         setLastSyncTime(new Date())
-        localStorage.setItem('lastSyncTime', new Date().toISOString())
       }
       
       return true
@@ -276,9 +286,9 @@ export function useDreamVault() {
     }
   }, [])
 
-  // Initial sync on mount if GitHub is configured
+  // Initial sync on mount if GitHub is configured (client-side only)
   useEffect(() => {
-    if (githubSync.isConfigured()) {
+    if (typeof window !== 'undefined' && githubSync.isConfigured()) {
       // Small delay to allow component to mount properly
       setTimeout(() => {
         syncWithGitHub()

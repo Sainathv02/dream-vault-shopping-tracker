@@ -22,21 +22,26 @@ export class GitHubSyncService {
 
   // Load configuration from localStorage
   private loadConfig(): void {
-    const stored = localStorage.getItem('github-sync-config')
-    if (stored) {
-      try {
+    // Only access localStorage in browser environment
+    if (typeof window === 'undefined') return
+    
+    try {
+      const stored = localStorage.getItem('github-sync-config')
+      if (stored) {
         this.config = JSON.parse(stored)
-      } catch (error) {
-        console.error('Failed to load GitHub config:', error)
-        this.config = null
       }
+    } catch (error) {
+      console.error('Failed to load GitHub config:', error)
+      this.config = null
     }
   }
 
   // Save configuration to localStorage
   public saveConfig(config: GitHubSyncConfig): void {
     this.config = config
-    localStorage.setItem('github-sync-config', JSON.stringify(config))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('github-sync-config', JSON.stringify(config))
+    }
   }
 
   // Check if sync is configured
@@ -52,7 +57,9 @@ export class GitHubSyncService {
   // Clear configuration
   public clearConfig(): void {
     this.config = null
-    localStorage.removeItem('github-sync-config')
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('github-sync-config')
+    }
   }
 
   // Create repository if it doesn't exist
@@ -313,7 +320,9 @@ export class GitHubSyncService {
     localVersion: number
     needsSync: boolean 
   }> {
-    const localVersion = parseInt(localStorage.getItem('data-version') || '0')
+    const localVersion = typeof window !== 'undefined'
+      ? parseInt(localStorage.getItem('data-version') || '0')
+      : 0
     
     try {
       const remoteData = await this.downloadData()
