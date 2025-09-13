@@ -1,5 +1,5 @@
 import { DreamFilter, SortOption } from '@/lib/types'
-import { Filter, SortDesc, X, Search } from 'lucide-react'
+import { Filter, X, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
@@ -124,7 +124,7 @@ export function FilterSortBar({
                   ].map((priority) => (
                     <button
                       key={priority.value}
-                      onClick={() => handlePriorityFilter(priority.value as any)}
+                      onClick={() => handlePriorityFilter(priority.value as 'low' | 'medium' | 'high')}
                       className={cn(
                         "px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200",
                         filter.priority === priority.value

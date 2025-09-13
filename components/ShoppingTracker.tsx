@@ -316,7 +316,7 @@ const ShoppingTracker: React.FC = () => {
             <div className="flex gap-3">
               <select 
                 value={filter} 
-                onChange={(e) => setFilter(e.target.value as any)}
+                onChange={(e) => setFilter(e.target.value as 'all' | 'purchased' | 'pending')}
                 className="px-6 py-3 bg-white/10 border border-white/20 rounded-2xl text-white backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="all">All Items</option>
@@ -325,7 +325,7 @@ const ShoppingTracker: React.FC = () => {
               </select>
               <select 
                 value={sortBy} 
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'price' | 'priority' | 'name')}
                 className="px-6 py-3 bg-white/10 border border-white/20 rounded-2xl text-white backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="priority">Priority</option>
@@ -376,7 +376,7 @@ const ShoppingTracker: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <select 
                     value={newItem.priority} 
-                    onChange={(e) => setNewItem({...newItem, priority: e.target.value as any})}
+                    onChange={(e) => setNewItem({...newItem, priority: e.target.value as 'low' | 'medium' | 'high'})}
                     className="px-6 py-3 bg-white/10 border border-white/20 rounded-2xl text-white backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="low">Low Priority</option>
