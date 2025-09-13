@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, Github, Settings, CheckCircle, AlertCircle, RefreshCw, Cloud, Key } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { githubSync } from '@/lib/github-sync'
+import { GitHubSyncDebug } from './GitHubSyncDebug'
 
 interface GitHubSyncModalProps {
   isOpen: boolean
@@ -14,7 +15,7 @@ interface GitHubSyncModalProps {
 export function GitHubSyncModal({ isOpen, onClose, onSync }: GitHubSyncModalProps) {
   const [token, setToken] = useState('')
   const [username, setUsername] = useState('')
-  const [repo, setRepo] = useState('dream-vault-data')
+  const [repo, setRepo] = useState('dream-vault-shopping-tracker')
   const [isConfigured, setIsConfigured] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<{
@@ -70,15 +71,27 @@ export function GitHubSyncModal({ isOpen, onClose, onSync }: GitHubSyncModalProp
       githubSync.saveConfig({
         token: token.trim(),
         username: username.trim() || '',
-        repo: repo.trim() || 'dream-vault-data'
+        repo: repo.trim() || 'dream-vault-shopping-tracker'
       })
 
       const result = await githubSync.testConnection()
       setConnectionStatus(result)
 
       if (result.success && result.user) {
-        setUsername(result.user.login)
+        const detectedUsername = result.user.login
+        setUsername(detectedUsername)
+        
+        // Immediately save the complete config with the detected username
+        const completeConfig = {
+          token: token.trim(),
+          username: detectedUsername,
+          repo: repo.trim() || 'dream-vault-shopping-tracker'
+        }
+        
+        githubSync.saveConfig(completeConfig)
         setIsConfigured(true)
+        
+        console.log('Saved complete config:', completeConfig)
       }
     } catch (error) {
       setConnectionStatus({ success: false, error: (error as Error).message })
@@ -88,18 +101,31 @@ export function GitHubSyncModal({ isOpen, onClose, onSync }: GitHubSyncModalProp
   }
 
   const saveConfiguration = async () => {
-    if (!token.trim() || !username.trim()) {
-      setConnectionStatus({ success: false, error: 'Token and username are required' })
+    // If we have a successful connection, username should be auto-detected
+    if (!token.trim()) {
+      setConnectionStatus({ success: false, error: 'Token is required' })
       return
+    }
+    
+    // If no username is set, try to detect it first
+    if (!username.trim()) {
+      const testResult = await githubSync.testConnection()
+      if (testResult.success && testResult.user) {
+        setUsername(testResult.user.login)
+      } else {
+        setConnectionStatus({ success: false, error: 'Could not detect username. Please test connection first.' })
+        return
+      }
     }
 
     try {
       const config = {
         token: token.trim(),
         username: username.trim(),
-        repo: repo.trim() || 'dream-vault-data'
+        repo: repo.trim() || 'dream-vault-shopping-tracker'
       }
 
+      console.log('Saving configuration:', { ...config, token: '***' })
       githubSync.saveConfig(config)
 
       // Create repository if it doesn't exist
@@ -114,10 +140,11 @@ export function GitHubSyncModal({ isOpen, onClose, onSync }: GitHubSyncModalProp
       
       setConnectionStatus({ 
         success: true, 
-        user: { login: username },
+        user: { login: username.trim() },
         error: undefined 
       })
     } catch (error) {
+      console.error('Save configuration error:', error)
       setConnectionStatus({ success: false, error: (error as Error).message })
     }
   }
@@ -126,7 +153,7 @@ export function GitHubSyncModal({ isOpen, onClose, onSync }: GitHubSyncModalProp
     githubSync.clearConfig()
     setToken('')
     setUsername('')
-    setRepo('dream-vault-data')
+    setRepo('dream-vault-shopping-tracker')
     setIsConfigured(false)
     setConnectionStatus(null)
     setSyncStatus(null)
@@ -215,7 +242,7 @@ export function GitHubSyncModal({ isOpen, onClose, onSync }: GitHubSyncModalProp
                       type="text"
                       value={repo}
                       onChange={(e) => setRepo(e.target.value)}
-                      placeholder="dream-vault-data"
+                      placeholder="dream-vault-shopping-tracker"
                       className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <p className="text-gray-500 text-xs mt-1">A new private repository will be created if it doesn&apos;t exist</p>
@@ -371,6 +398,9 @@ export function GitHubSyncModal({ isOpen, onClose, onSync }: GitHubSyncModalProp
                     github.com/{username}/{repo}
                   </a>
                 </div>
+
+                {/* Debug Section */}
+                <GitHubSyncDebug />
               </>
             )}
           </div>

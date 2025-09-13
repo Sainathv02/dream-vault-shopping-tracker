@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDreamVault } from '@/hooks/useDreamVault'
 import { DreamItem } from '@/lib/types'
 import { DreamStatsCards } from './DreamStatsCards'
@@ -30,6 +30,12 @@ export function DreamVault() {
     syncError,
     isGitHubConfigured
   } = useDreamVault()
+  
+  const [isClient, setIsClient] = useState(false)
+  
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedItem, setSelectedItem] = useState<DreamItem | null>(null)

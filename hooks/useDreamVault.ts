@@ -182,7 +182,9 @@ export function useDreamVault() {
       return true
     } catch (error) {
       console.error('Sync failed:', error)
-      setSyncError((error as Error).message)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown sync error'
+      console.error('Detailed sync error:', errorMessage)
+      setSyncError(errorMessage)
       return false
     } finally {
       setIsSyncing(false)
