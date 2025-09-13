@@ -9,7 +9,8 @@ import { AddDreamForm } from './AddDreamForm'
 import { FilterSortBar } from './FilterSortBar'
 import { ItemDetailModal } from './ItemDetailModal'
 import { EDCChecklist } from './EDCChecklist'
-import { Plus, ShoppingCart, X, Zap } from 'lucide-react'
+import { DataSync } from './DataSync'
+import { Plus, ShoppingCart, X, Zap, Cloud } from 'lucide-react'
 
 export function DreamVault() {
   const {
@@ -22,13 +23,15 @@ export function DreamVault() {
     setSortBy,
     addDream,
     deleteDream,
-    togglePurchased
+    togglePurchased,
+    importDreams
   } = useDreamVault()
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedItem, setSelectedItem] = useState<DreamItem | null>(null)
   const [showItemModal, setShowItemModal] = useState(false)
   const [showEDCChecklist, setShowEDCChecklist] = useState(false)
+  const [showDataSync, setShowDataSync] = useState(false)
 
   const handleAddDream = (dreamData: Omit<DreamItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     addDream(dreamData)
@@ -134,6 +137,18 @@ export function DreamVault() {
               <div className="flex items-center gap-3">
                 <Zap className="w-6 h-6 text-white transition-transform duration-500" />
                 <span className="text-white font-bold text-lg">EDC Checklist</span>
+              </div>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => setShowDataSync(true)} 
+            className="group relative overflow-hidden bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 rounded-full p-1 hover:shadow-2xl hover:shadow-blue-600/25 transition-all duration-500"
+          >
+            <div className="bg-black rounded-full px-8 py-4 group-hover:bg-transparent transition-all duration-300">
+              <div className="flex items-center gap-3">
+                <Cloud className="w-6 h-6 text-white transition-transform duration-500" />
+                <span className="text-white font-bold text-lg">Sync Data</span>
               </div>
             </div>
           </button>
@@ -282,6 +297,14 @@ export function DreamVault() {
         <EDCChecklist
           isOpen={showEDCChecklist}
           onClose={() => setShowEDCChecklist(false)}
+        />
+
+        {/* Data Sync */}
+        <DataSync
+          isOpen={showDataSync}
+          onClose={() => setShowDataSync(false)}
+          dreams={allDreams}
+          onImportDreams={importDreams}
         />
       </div>
     </div>

@@ -122,6 +122,22 @@ export function useDreamVault() {
     })
   }
 
+  const importDreams = (importedDreams: DreamItem[]) => {
+    // Merge imported dreams with existing ones, avoiding duplicates by name
+    setDreams(prev => {
+      const existingNames = new Set(prev.map(dream => dream.name.toLowerCase()))
+      const newDreams = importedDreams.filter(dream => 
+        !existingNames.has(dream.name.toLowerCase())
+      ).map(dream => ({
+        ...dream,
+        id: uuidv4(), // Generate new ID to avoid conflicts
+        createdAt: new Date(dream.createdAt),
+        updatedAt: new Date(dream.updatedAt)
+      }))
+      return [...prev, ...newDreams]
+    })
+  }
+
   return {
     dreams: filteredDreams,
     allDreams: dreams,
@@ -133,6 +149,7 @@ export function useDreamVault() {
     addDream,
     updateDream,
     deleteDream,
-    togglePurchased
+    togglePurchased,
+    importDreams
   }
 }
