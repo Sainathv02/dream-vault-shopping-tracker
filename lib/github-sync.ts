@@ -5,9 +5,29 @@ interface GitHubSyncConfig {
   branch?: string
 }
 
+interface DreamItem {
+  id: string
+  name: string
+  specifications?: string
+  price: number
+  priority: 'low' | 'medium' | 'high'
+  purchased: boolean
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+interface EDCItem {
+  id: string
+  name: string
+  description: string
+  acquired: boolean
+  priority: 'low' | 'medium' | 'high'
+  createdAt: string
+}
+
 interface SyncData {
-  dreams: any[]
-  edcItems: any[]
+  dreams: DreamItem[]
+  edcItems: EDCItem[]
   lastSync: string
   version: number
 }
@@ -143,7 +163,7 @@ export class GitHubSyncService {
     const content = btoa(JSON.stringify(syncData, null, 2))
     const message = `Update Dream Vault data - ${new Date().toLocaleDateString()}`
 
-    const body: any = {
+    const body: { message: string; content: string; branch: string; sha?: string } = {
       message,
       content,
       branch
@@ -209,7 +229,7 @@ export class GitHubSyncService {
   }
 
   // Sync local data with GitHub (smart merge)
-  public async syncData(localDreams: any[], localEdcItems: any[]): Promise<{ dreams: any[], edcItems: any[] }> {
+  public async syncData(localDreams: DreamItem[], localEdcItems: EDCItem[]): Promise<{ dreams: DreamItem[], edcItems: EDCItem[] }> {
     try {
       // Download remote data
       const remoteData = await this.downloadData()
@@ -264,7 +284,7 @@ export class GitHubSyncService {
   }
 
   // Merge arrays by timestamp (newer wins, unique by ID)
-  private mergeArraysByTimestamp(localItems: any[], remoteItems: any[]): any[] {
+  private mergeArraysByTimestamp<T extends { id?: string; updatedAt?: string | Date }>(localItems: T[], remoteItems: T[]): T[] {
     const merged = new Map()
 
     // Add all remote items first
@@ -288,7 +308,7 @@ export class GitHubSyncService {
   }
 
   // Test GitHub connection
-  public async testConnection(): Promise<{ success: boolean; user?: any; error?: string }> {
+  public async testConnection(): Promise<{ success: boolean; user?: { login: string; [key: string]: unknown }; error?: string }> {
     if (!this.config?.token) {
       return { success: false, error: 'No token configured' }
     }
@@ -335,7 +355,7 @@ export class GitHubSyncService {
         localVersion,
         needsSync: localVersion !== remoteVersion
       }
-    } catch (error) {
+    } catch {
       return {
         localVersion,
         needsSync: true

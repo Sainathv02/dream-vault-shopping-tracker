@@ -303,7 +303,7 @@ class ProductExtractor {
         domain,
         favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
       }
-    } catch (error) {
+    } catch {
       return { domain: 'Unknown' }
     }
   }

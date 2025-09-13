@@ -62,7 +62,7 @@ export function useDreamVault() {
   const [isSyncing, setIsSyncing] = useState(false)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
-  const syncTimeoutRef = useRef<NodeJS.Timeout>()
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Save to localStorage and auto-sync whenever dreams change
   useEffect(() => {

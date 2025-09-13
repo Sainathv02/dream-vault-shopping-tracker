@@ -25,8 +25,6 @@ export function DreamVault() {
     deleteDream,
     togglePurchased,
     syncWithGitHub,
-    uploadToGitHub,
-    downloadFromGitHub,
     isSyncing,
     lastSyncTime,
     syncError,

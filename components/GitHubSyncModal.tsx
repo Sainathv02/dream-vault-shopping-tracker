@@ -19,7 +19,7 @@ export function GitHubSyncModal({ isOpen, onClose, onSync }: GitHubSyncModalProp
   const [isConnecting, setIsConnecting] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<{
     success: boolean
-    user?: any
+    user?: { login: string; [key: string]: unknown }
     error?: string
   } | null>(null)
   const [syncStatus, setSyncStatus] = useState<{
@@ -185,7 +185,7 @@ export function GitHubSyncModal({ isOpen, onClose, onSync }: GitHubSyncModalProp
                   </h3>
                   <div className="space-y-3 text-gray-300 text-sm">
                     <p><strong>Step 1:</strong> Go to <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)</a></p>
-                    <p><strong>Step 2:</strong> Click "Generate new token (classic)"</p>
+                    <p><strong>Step 2:</strong> Click &quot;Generate new token (classic)&quot;</p>
                     <p><strong>Step 3:</strong> Select scopes: <code className="bg-gray-800 px-1 rounded">repo</code> (for private repos) or <code className="bg-gray-800 px-1 rounded">public_repo</code> (for public repos)</p>
                     <p><strong>Step 4:</strong> Copy the token and paste it below</p>
                   </div>
@@ -218,7 +218,7 @@ export function GitHubSyncModal({ isOpen, onClose, onSync }: GitHubSyncModalProp
                       placeholder="dream-vault-data"
                       className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <p className="text-gray-500 text-xs mt-1">A new private repository will be created if it doesn't exist</p>
+                    <p className="text-gray-500 text-xs mt-1">A new private repository will be created if it doesn&apos;t exist</p>
                   </div>
 
                   {/* Test Connection */}

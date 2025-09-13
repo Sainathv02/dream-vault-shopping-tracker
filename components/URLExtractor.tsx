@@ -17,7 +17,7 @@ export function URLExtractor({ onExtracted, className }: URLExtractorProps) {
   const [extractionResult, setExtractionResult] = useState<{
     success: boolean
     message: string
-    data?: any
+    data?: Partial<Omit<DreamItem, 'id' | 'createdAt' | 'updatedAt'>>
   } | null>(null)
   const [preview, setPreview] = useState<{
     title?: string
@@ -34,7 +34,7 @@ export function URLExtractor({ onExtracted, className }: URLExtractorProps) {
       try {
         const previewData = await productExtractor.getUrlPreview(value)
         setPreview(previewData)
-      } catch (error) {
+      } catch {
         setPreview(null)
       }
     } else {
@@ -102,7 +102,7 @@ export function URLExtractor({ onExtracted, className }: URLExtractorProps) {
           setExtractionResult(null)
         }, 3000)
       }
-    } catch (error) {
+    } catch {
       setExtractionResult({
         success: false,
         message: 'Extraction failed. Please try again or enter details manually.'
@@ -171,7 +171,7 @@ export function URLExtractor({ onExtracted, className }: URLExtractorProps) {
           <div className="mt-3 p-3 bg-gray-800/30 rounded-xl border border-gray-700">
             <div className="flex items-center gap-3">
               {preview.favicon && (
-                <img src={preview.favicon} alt="" className="w-4 h-4" />
+                <img src={preview.favicon} alt="Website favicon" className="w-4 h-4" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium truncate">{preview.title}</p>
@@ -211,7 +211,7 @@ export function URLExtractor({ onExtracted, className }: URLExtractorProps) {
                     {extractionResult.data.name && (
                       <p><span className="text-gray-400">Name:</span> <span className="text-white">{extractionResult.data.name}</span></p>
                     )}
-                    {extractionResult.data.price > 0 && (
+                    {extractionResult.data.price && extractionResult.data.price > 0 && (
                       <p><span className="text-gray-400">Price:</span> <span className="text-green-400">${extractionResult.data.price}</span></p>
                     )}
                   </div>
