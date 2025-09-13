@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { DreamItem } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { URLExtractor } from './URLExtractor'
+import { Link, Edit3 } from 'lucide-react'
 
 interface AddDreamFormProps {
   onSubmit: (dreamData: Omit<DreamItem, 'id' | 'createdAt' | 'updatedAt'>) => void
@@ -9,6 +11,7 @@ interface AddDreamFormProps {
 }
 
 export function AddDreamForm({ onSubmit, onCancel, isVisible }: AddDreamFormProps) {
+  const [activeTab, setActiveTab] = useState<'url' | 'manual'>('url')
   const [formData, setFormData] = useState({
     name: '',
     specifications: '',
@@ -42,6 +45,17 @@ export function AddDreamForm({ onSubmit, onCancel, isVisible }: AddDreamFormProp
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  const handleExtractedData = (data: Partial<Omit<DreamItem, 'id' | 'createdAt' | 'updatedAt'>>) => {
+    setFormData({
+      name: data.name || '',
+      specifications: data.specifications || '',
+      price: data.price ? data.price.toString() : '',
+      priority: data.priority || 'medium'
+    })
+    // Switch to manual tab to allow editing
+    setActiveTab('manual')
+  }
+
   if (!isVisible) return null
 
   return (
@@ -49,7 +63,49 @@ export function AddDreamForm({ onSubmit, onCancel, isVisible }: AddDreamFormProp
       <div className="relative">
         <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 via-purple-600 to-rose-600 rounded-3xl blur-xl opacity-30"></div>
         <div className="relative bg-gray-900/90 backdrop-filter backdrop-blur-lg border border-gray-800 rounded-3xl p-8">
-          <form onSubmit={handleSubmit}>
+          {/* Tabs */}
+          <div className="flex mb-8">
+            <div className="bg-gray-800/50 rounded-2xl p-1 flex">
+              <button
+                type="button"
+                onClick={() => setActiveTab('url')}
+                className={cn(
+                  "px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2",
+                  activeTab === 'url'
+                    ? "bg-purple-600 text-white shadow-lg"
+                    : "text-gray-400 hover:text-white"
+                )}
+              >
+                <Link className="w-4 h-4" />
+                Smart URL Extract
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('manual')}
+                className={cn(
+                  "px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2",
+                  activeTab === 'manual'
+                    ? "bg-purple-600 text-white shadow-lg"
+                    : "text-gray-400 hover:text-white"
+                )}
+              >
+                <Edit3 className="w-4 h-4" />
+                Manual Entry
+              </button>
+            </div>
+          </div>
+
+          {/* URL Extractor Tab */}
+          {activeTab === 'url' && (
+            <URLExtractor 
+              onExtracted={handleExtractedData}
+              className="mb-8"
+            />
+          )}
+
+          {/* Manual Form Tab */}
+          {activeTab === 'manual' && (
+            <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <input
                 type="text"
@@ -106,23 +162,24 @@ export function AddDreamForm({ onSubmit, onCancel, isVisible }: AddDreamFormProp
               </div>
             </div>
             
-            <div className="flex justify-end mt-6 gap-4">
-              <button 
-                type="button"
-                onClick={onCancel}
-                className="px-6 py-3 text-gray-400 hover:text-white transition-colors duration-200"
-              >
-                Cancel
-              </button>
-              
-              <button 
-                type="submit"
-                className="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-violet-600/25"
-              >
-                Add to Vault
-              </button>
-            </div>
-          </form>
+              <div className="flex justify-end mt-6 gap-4">
+                <button 
+                  type="button"
+                  onClick={onCancel}
+                  className="px-6 py-3 text-gray-400 hover:text-white transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                
+                <button 
+                  type="submit"
+                  className="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-2xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-violet-600/25"
+                >
+                  Add to Vault
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>
